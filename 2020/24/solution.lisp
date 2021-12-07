@@ -84,8 +84,85 @@
           using (hash-value v)
           collect (cons k v))))                         
 
-(length (remove-if
-         #'evenp
-         (occurrences
-           (mapcar #'eval-line *parsed*))
-         :key #'cdr))
+(defvar *initial-blacks*)
+
+(setf *initial-blacks*
+  (remove-if
+   #'evenp
+   (occurrences
+     (mapcar #'eval-line *parsed*))
+   :key #'cdr))
+
+(length *initial-blacks*)
+
+;----------------------
+
+(setf *initial-blacks*
+      (mapcar #'first *initial-blacks*))
+
+(defun get-relative (x y direction)
+  (let
+    ((*x* x)
+     (*y* y))
+    (funcall direction)
+    (list *x* *y*)))
+
+#|
+
+(get-relative 0 0 'nw)
+
+|#
+
+(defun get-adjacent (point)
+  (mapcar (lambda (dir) (get-relative (first point) (second point) dir))
+          '(nw ne e se sw w)))
+#|
+ 
+(get-adjacent (list 0 0))
+
+|#
+
+
+(defun make-candidates (blacks)
+  (remove-duplicates
+    (append
+      blacks
+      (mapcan #'get-adjacent blacks))
+    :test #'equalp))
+
+(defun one-iteration (blacks)
+  (labels
+    ((blackp (point)
+       (when (member point blacks :test #'equalp)
+          t))
+     (black-rule (point)
+       (case (count-if #'blackp (get-adjacent point))
+         ((1 2) (list point))
+         (otherwise nil)))
+     (white-rule (point)
+       (case (count-if #'blackp (get-adjacent point))
+         (2 (list point))
+         (otherwise nil))))
+    (let
+      ((candidates (make-candidates blacks)))
+      (mapcan 
+        (lambda (p)
+          (if (blackp p)
+            (black-rule p)
+            (white-rule p)))
+        candidates))))
+
+
+(length (one-iteration *initial-blacks*))
+
+
+(defun iterate (initial f n)
+  (if (= n 0)
+    initial
+    (let*
+      ((i (copy-tree initial))
+       (new (funcall f i)))
+      (iterate new f (- n 1)))))
+
+
+(length (iterate *initial-blacks* #'one-iteration 100))
