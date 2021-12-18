@@ -1,4 +1,4 @@
-(ql:quickload '(:alexandria :arrows :cl-zipper))
+(ql:quickload '(:alexandria :arrows :cl-zipper :str))
 
 (use-package :arrows)
 
@@ -143,6 +143,27 @@
 (defun plus (a b)
   (->> (list a b)
        (reduce-list)))
+
+(defun magnitude (lst)
+  (let*
+    ((left (first lst))
+     (right (second lst))
+     (left-result (* 3 (if (numberp left)
+                         left
+                         (magnitude left))))
+     (right-result (* 2 (if (numberp right)
+                          right
+                          (magnitude right)))))
+    (+ left-result right-result)))
+
+(-<>> "input.txt"
+  (alexandria:read-file-into-string)
+  (str:lines)
+  (mapcar #'lispify)
+  (reduce #'plus)
+  (magnitude))
+
+;-------------------------------------
 
 
 
