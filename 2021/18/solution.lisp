@@ -13,12 +13,6 @@
         (read-from-string)))
 
 
-(defvar *loc*)
-
-(setf *loc*
-  (cl-zipper:make-zipper (lispify *ex1*)))
-
-
 (defun depth (init)
   (loop for i = 1 then (1+ i)
         for loc = init then (cl-zipper:up loc)
@@ -74,7 +68,7 @@
   (let
     ((explode-here (find-explode loc)))
     (if (not explode-here)
-      (values loc nil)
+      (values (find-root loc) nil)
       (let*
         ((left  (first (cl-zipper:node explode-here)))
          (right (second (cl-zipper:node explode-here)))
@@ -97,72 +91,58 @@
           (cl-zipper:make-zipper (cl-zipper:root after-all))
           t)))))
 
+(defun find-split (loc)
+  (loop for l = (find-root loc) then (cl-zipper:next l)
+        do (if (and (numberp (cl-zipper:node l))
+                    (>= (cl-zipper:node l) 10))
+             (return l))
+        while (cl-zipper:next l)))
 
-(maybe-explode (cl-zipper:make-zipper (lispify "[[[[[9,8],1],2],3],4]")))
+(defun split-num (n)
+  (list
+    (floor n 2)
+    (ceiling n 2)))
 
-(maybe-explode (cl-zipper:make-zipper (lispify "[7,[6,[5,[4,[3,2]]]]]")))
+(defun maybe-split (loc)
+  (let
+    ((split-here (find-split loc)))
+    (if (not split-here)
+      (values (find-root loc) nil)
+      (let*
+        ((val (split-num (cl-zipper:node split-here)))
+         (after-split (cl-zipper:replace split-here val)))
+        (values
+          (find-root after-split)
+          t)))))
 
-(maybe-explode (cl-zipper:make-zipper (lispify "[[6,[5,[4,[3,2]]]],1]")))
 
-(maybe-explode (cl-zipper:make-zipper (lispify "[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]")))
+(defun maybe-explode-or-split (loc)
+  (multiple-value-bind (result done?)
+      (maybe-explode loc)
+      (if done?
+        (values result done?)
+        (maybe-split loc))))
 
-(maybe-explode (cl-zipper:make-zipper (lispify "")))
+(maybe-explode-or-split *loc*)
+
+(defun reducee (loc)
+  ;(format t "reducind ~a ..." (cl-zipper:node loc))
+  (multiple-value-bind (result done?)
+    (maybe-explode-or-split loc)
+    ;(format t "was ~a ~%" done?)
+    (if done?
+      (reducee result)
+      loc)))
+
+(defun reduce-list (l)
+  (->> l
+       (cl-zipper:make-zipper)
+       (reducee)
+       (cl-zipper:node)))
+
+(defun plus (a b)
+  (->> (list a b)
+       (reduce-list)))
 
 
-(find-keyword *problem*)
 
-(->> (maybe-explode *problem*)
-  (cl-zipper:node)
-  (cl-zipper:make-zipper)
-  (find-keyword))
-
-*problem*
-
-(maybe-explode *loc*)
-
-(defvar *problem*)
-
-(setf *problem*
-  (->> *loc*
-    (maybe-explode)
-    (cl-zipper:node)
-    (cl-zipper:make-zipper)))
-
-(maybe-explode *problem*)
-
-(->> *loc*
-  (maybe-explode)
-  (maybe-explode))
-
-(find-explode (cl-zipper:make-zipper '(1 (2 3))))
-
-(-<> (find-explode *loc*)
-  (cl-zipper:replace <> :zero)
-  (cl-zipper:root))
-
-(-<> (find-explode *loc*)
-  (cl-zipper:replace <> :zero)
-  (cl-zipper:up)
-  (cl-zipper:up)
-  (cl-zipper:up)
-  (cl-zipper:up)
-  (find-keyword))
-
-(-<> *loc*
-  (cl-zipper:down)
-  (cl-zipper:down)
-  (cl-zipper:right)
-  (cl-zipper:down)
-  (cl-zipper:right)
-  (cl-zipper:down)
-  (cl-zipper:right)
-  (should-explode))
-
-(-<> *loc*
-  (cl-zipper:down)
-  (cl-zipper:down)
-  (cl-zipper:down)
-  (four-deep))
-
-(-<> *loc*
-  (cl-zipper:up))
