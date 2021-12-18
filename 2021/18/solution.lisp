@@ -165,5 +165,20 @@
 
 ;-------------------------------------
 
+(defun pairs (all)
+  (->>
+    (loop for i in all
+      append (loop for j in all
+                collect (list i j)))
+    (remove-if
+      (lambda (c)
+        (equalp (first c) (second c))))))
 
 
+(-<>> "input.txt"
+  (alexandria:read-file-into-string)
+  (str:lines)
+  (mapcar #'lispify)
+  (pairs)
+  (mapcar (lambda (c) (magnitude (plus (first c) (second c)))))
+  (apply #'max))
