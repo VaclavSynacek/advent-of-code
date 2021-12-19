@@ -1,3 +1,5 @@
+(declaim (optimize (speed 3) (safety 0) (debug 0)))
+
 (ql:quickload '(:alexandria :arrows :cl-zipper :str))
 
 (use-package :arrows)
@@ -93,11 +95,15 @@
 
 (setf -b-rotations- nil)
 
+#|
+
 (setf -b-rotations- 
   (list
     (list  'x  'y  'z)
     (list  'y  'z 'x)
     (list  'z 'x  'y)))
+
+|#
 
 (alexandria:map-permutations
   (lambda (p)
@@ -162,6 +168,8 @@
                rotated-and-translated-b)))) 
              ;(format t "unsuccessfull rotation ~a ~%" i))))
 
+#|
+
 (find-difference-with-rotations
   (list
     (make-p 0 0 0)
@@ -175,7 +183,7 @@
     (make-p 3 -4 -4)
     (make-p 9 -9 -9)))
 
-
+|#
 
 (defun maybe-merge (a b)
   (format t "maybe-merge called with a ~a long, b ~a long~%"
@@ -215,3 +223,4 @@
     (first (read-input-file "input.txt"))
     (rest (read-input-file "input.txt"))))
     
+(length *result*)
