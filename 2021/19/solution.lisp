@@ -79,20 +79,33 @@
 
 (setf -a-rotations-
   (list
-    (list 1  1  1)
-    (list 1  1 -1)
-    (list 1 -1  1)
-    (list 1 -1 -1)))
+    (list  1  1  1)
+    (list  1  1 -1)
+    (list  1 -1  1)
+    (list  1 -1 -1)
+    (list -1  1  1)
+    (list -1  1 -1)
+    (list -1 -1  1)
+    (list -1 -1 -1)))
 
 
 (defvar -b-rotations-) 
 
 (setf -b-rotations- nil)
 
+(setf -b-rotations- 
+  (list
+    (list  'x  'y  'z)
+    (list  'y  'z 'x)
+    (list  'z 'x  'y)))
+
 (alexandria:map-permutations
   (lambda (p)
     (push p -b-rotations-))
   (list 'x 'y 'z))
+
+-b-rotations-
+
 
 (defun rot-b-fn (rot)
   (lambda (p)
@@ -133,7 +146,7 @@
                  (diff-fn (translate-fn diff))
                  (b-translated (mapcar diff-fn scanner-b))
                  (inter (intersection scanner-a b-translated :test #'p=)))
-                (if (>= (length inter) 3)
+                (if (>= (length inter) 12)
                   (return-from find-difference b-translated))))))
                   ;(format t "not overlaping with diff ~a only ~a ~%" diff (length inter)))))))
 
@@ -157,12 +170,48 @@
     (make-p 2 2 3)
     (make-p 2 3 3))
   (list
-    (make-p 3 3 -3)
-    (make-p 3 3 -4)
-    (make-p 3 4 -4)
-    (make-p 9 9 -9)))
+    (make-p 3 -3 -3)
+    (make-p 3 -3 -4)
+    (make-p 3 -4 -4)
+    (make-p 9 -9 -9)))
 
 
 
-(read-input-file "small-input.txt")
+(defun maybe-merge (a b)
+  (format t "maybe-merge called with a ~a long, b ~a long~%"
+          (length a)
+          (length b))
+  (let
+    ((difference (find-difference-with-rotations a b)))
+    (if difference
+      (remove-duplicates
+        (append a difference)
+        :test #'p=))))
 
+(defun merge-all-into (acc scanners)
+  (format t "merge-all called with acc ~a long, scanners ~a long~%"
+          (length acc)
+          (length scanners))
+  (when (zerop (length scanners))
+    (return-from merge-all-into acc))
+  (loop for s in scanners
+        for i = 1 then (1+ i)
+        do (let*
+             ((merge (maybe-merge acc s)))
+             (when merge
+               (format t "after ~a tries, we have merge with  total ~a~%"
+                       i
+                       (length merge))
+               (return-from
+                 merge-all-into
+                 (merge-all-into merge (remove s scanners :test #'equalp))))))
+  nil)
+
+
+(defvar *result*)
+
+(setf *result*
+  (merge-all-into
+    (first (read-input-file "input.txt"))
+    (rest (read-input-file "input.txt"))))
+    
