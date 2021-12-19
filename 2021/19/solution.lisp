@@ -4,6 +4,8 @@
 
 (use-package :arrows)
 
+(defvar *scanner-centers*)
+
 (defstruct point
   (x 0 :type fixnum)
   (y 0 :type fixnum)
@@ -58,23 +60,23 @@
 (defun p+ (p1 p2)
   (declare (type point p1 p2))
   (make-p
-    (+ (point-x p1) (point-x p2))
-    (+ (point-y p1) (point-y p2))
-    (+ (point-z p1) (point-z p2))))
+    (the fixnum (+ (point-x p1) (point-x p2)))
+    (the fixnum (+ (point-y p1) (point-y p2)))
+    (the fixnum (+ (point-z p1) (point-z p2)))))
 
 (defun p- (p1 p2)
   (declare (type point p1 p2))
   (make-p
-    (- (point-x p1) (point-x p2))
-    (- (point-y p1) (point-y p2))
-    (- (point-z p1) (point-z p2))))
+    (the fixnum (- (point-x p1) (point-x p2)))
+    (the fixnum (- (point-y p1) (point-y p2)))
+    (the fixnum (- (point-z p1) (point-z p2)))))
 
 (defun p* (p1 p2)
   (declare (type point p1 p2))
   (make-p
-    (* (point-x p1) (point-x p2))
-    (* (point-y p1) (point-y p2))
-    (* (point-z p1) (point-z p2))))
+    (the fixnum (* (point-x p1) (point-x p2)))
+    (the fixnum (* (point-y p1) (point-y p2)))
+    (the fixnum (* (point-z p1) (point-z p2)))))
 
 
 (defvar -a-rotations-)
@@ -152,9 +154,11 @@
                  (diff-fn (translate-fn diff))
                  (b-translated (mapcar diff-fn scanner-b))
                  (inter (intersection scanner-a b-translated :test #'p=)))
-                (if (>= (length inter) 12)
+                (when (>= (length inter) 12)
+                  (push
+                    (funcall diff-fn (make-p 0 0 0))
+                    *scanner-centers*)
                   (return-from find-difference b-translated))))))
-                  ;(format t "not overlaping with diff ~a only ~a ~%" diff (length inter)))))))
 
 
 (defun find-difference-with-rotations (scanner-a scanner-b)
@@ -218,9 +222,36 @@
 
 (defvar *result*)
 
+
+(setf *scanner-centers* '())
+
 (setf *result*
   (merge-all-into
     (first (read-input-file "input.txt"))
     (rest (read-input-file "input.txt"))))
-    
+
 (length *result*)
+
+;-----------------------------
+
+(defun manhatan (p1 p2)
+  (+
+    (abs (- (point-x p1) (point-x p2)))
+    (abs (- (point-y p1) (point-y p2)))
+    (abs (- (point-z p1) (point-z p2)))))
+
+(defvar *manhatans*)
+
+(setf *manhatans* '())
+
+(alexandria:map-combinations
+  (lambda (c)
+    (push
+      (manhatan (first c) (second c))
+      *manhatans*))
+  *scanner-centers*
+  :length 2)
+
+(apply #'max *manhatans*)
+
+
