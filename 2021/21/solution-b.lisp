@@ -88,6 +88,16 @@
       1
       (apply #'+ (list (roll) (roll) (roll))))))
 
+(defun all-dices ()
+  (list
+    (list 1 9)
+    (list 3 8)
+    (list 6 7)
+    (list 7 6)
+    (list 6 5)
+    (list 3 4)
+    (list 1 3)))
+
 
 (defun play (init)
   (init-universe init)
@@ -111,7 +121,7 @@
                     (setf (second player) new-pos)
                     (if (>=
                           (incf (third player) new-pos)
-                          1000)
+                          21)
                         (add-wins (first player) times)
                         (add-to-universe
                           (list
@@ -121,5 +131,7 @@
 
 (play (copy-tree +input+))
 
-*results*
+(max
+  (second *results*)
+  (fourth *results*))
 
