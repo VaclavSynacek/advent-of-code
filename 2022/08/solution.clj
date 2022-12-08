@@ -2,16 +2,12 @@
 
 (def input (slurp "input.txt"))
 
-
-small
-
 (defn parse [in]
   (->> in
     (clojure.string/split-lines)
     (map #(map (comp read-string str) %))))
 
-(parse small)
-
+;(parse small)
 
 (defn visible-in-line [line]
   (->> line
@@ -56,7 +52,7 @@ small
             (rot90-n-times r2)))
     all-rotations))
 
-(visible-from-all-sides (parse small))
+;(visible-from-all-sides (parse small))
 
 (defn matrix-map [f m1 m2]
   (map
@@ -76,3 +72,42 @@ small
      count)
 
 
+;; --------------------------------------------
+
+(defn sight-in-line [line]
+  (->> line
+    (map-indexed
+      (fn [idx val]
+        [val (reverse (take idx line))]))
+    (map
+      (fn [[tree trees]]
+        (take (->> trees
+               (take-while #(< % tree))
+               count
+               (+ 1))
+              trees)))
+    (map count)))
+
+(defn sight-from-left [forest]
+  (->> forest
+    (map sight-in-line)))
+
+
+(defn sight-from-all-sides [matrix]
+  (map
+    (fn [[r1 r2]]
+       (->> matrix
+            (rot90-n-times r1)
+            (sight-from-left)
+            (rot90-n-times r2)))
+    all-rotations))
+
+(defn sight-all-around [matrix]
+  (reduce (partial matrix-map #(* %1 %2)) (sight-from-all-sides matrix)))
+
+;; second half
+(->> input
+     parse
+     sight-all-around
+     flatten
+     (apply max))
