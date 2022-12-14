@@ -115,10 +115,37 @@ world
    answer (get-in after loc)]
   answer)
 
+;; -----------------------------------
+(parse-to-raw small)
+
+(defn parse-to-world-reverse [raw]
+  (let
+    [start (first (find-all raw \S))
+     end   (first (find-all raw \E))
+     ground (-> raw
+                (mset start \a)
+                (mset end \z))
+     access (-> (nilm raw)
+                (mset end 0))]
+    {:ground ground
+     :access access
+     :ends (find-all ground \a)}))
+
+;; redefine in reverse
+(defn gradient-ok? [from to]
+  (>= (- (int to) (int from)) -1))
 
 
-
-
-
-
+;; second half
+(let
+  [world (parse-to-world-reverse (parse-to-raw input))
+   after (->> (iterate step world)
+             (partition 2 1)
+             (drop-while (fn [[a b]] (not= a b)))
+             first
+             first)
+   end-scores (map #(get-in (:access after) %) (:ends world))]
+  (->> end-scores
+    (filter identity)
+    (apply min)))
 
