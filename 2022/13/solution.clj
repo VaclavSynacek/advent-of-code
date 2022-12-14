@@ -61,4 +61,15 @@
     (map first)
     (reduce +)))
    
+; second half
+(let
+  [results (->> (parse input)
+            (apply concat)
+            (concat [[[6]] [[2]]])
+            (sort #(compare-packets %1 %2)))
+   indexes (range 1 (+ 1 (count results)))]
+  (->> (map vector indexes results)
+    (filter #(#{[[6]] [[2]]} (second %)))
+    (map first)
+    (reduce *)))
 
