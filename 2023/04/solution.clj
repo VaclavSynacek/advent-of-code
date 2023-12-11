@@ -38,3 +38,42 @@
   (map my-winning)
   (map rate)
   (reduce +))
+
+;; ---------------------------------
+
+(defn to-strut [input]
+  (let
+    [wins
+      (->> input
+        (map parse-line)
+        (map my-winning)
+        (map count))]
+    {:wins wins
+     :copies (map (constantly 1) wins)
+     :total 0}))
+
+
+(to-strut small)
+
+
+(defn do-one-step [world]
+  (let
+    [this-wins (first (:wins world))
+     this-copies (first (:copies world))
+     wins (rest (:wins world))
+     extra-copies (concat
+                    (map (constantly this-copies) (range this-wins))
+                    (repeat 0))
+     copies (map +
+                 (rest (:copies world))
+                 extra-copies)
+     total (+ (:total world) this-copies)]
+    {:wins wins
+     :copies copies
+     :total total}))
+
+
+(->> (iterate do-one-step (to-strut input))
+  (drop-while #(> (count (:wins %)) 0))
+  first
+  :total)
