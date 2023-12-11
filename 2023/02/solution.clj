@@ -47,5 +47,14 @@
   (reduce +))
   
 
+;; --------------------------------
 
+(defn power [{:keys [id turns]}]
+  (*
+    (apply max (get-all-by-color :red turns))
+    (apply max (get-all-by-color :green turns))
+    (apply max (get-all-by-color :blue turns))))
 
+(->> input
+  (map power)
+  (reduce +))
