@@ -1,92 +1,145 @@
 (def small
-  (slurp "small-input.txt"))
+  (->> (slurp "small-input.txt")
+    (clojure.string/split-lines)))
 
 (def input
-  (slurp "input.txt"))
-
-small
-
-input
-
-(defn deep-string-change [f string-or-tree]
-  (clojure.walk/postwalk
-    (fn [string-or-tree]
-      (str "now in " string-or-tree)
-      (if (string? string-or-tree)
-        (f string-or-tree) 
-        string-or-tree))
-    string-or-tree))o
-
-(defn parse-command [line]
-  (->> (clojure.string/split line #" ")
-    (map-indexed (fn [idx itm]
-                   (if (even? idx)
-                     (keyword itm)
-                     (read-string itm))))
-    (apply hash-map)))
+  (->> (slurp "input.txt")
+    (clojure.string/split-lines)))
 
 
-(defn parse [in]
-  (let
-    [lines (clojure.string/split-lines in)
-     sep (split-with (partial not= "") lines)
-     containers-raw (drop-last (first sep))
-     num-heaps (/ (+ 1 (count (last (first sep)))) 4)
-     moves (->> (drop 1 (second sep))
-              (map parse-command))
-     heaps (->> (for [i (range num-heaps)]
-                  (for [s (range (count containers-raw))]
-                    (nth (nth containers-raw s) (+ 1 (* 4 i)))))
-              (map #(remove #{\space} %))
-              (into []))]
-    {:heaps heaps
-     :moves moves}))
+(defn print-it [universe]
+  (doseq [l universe]
+    (println l)))
 
 
-(defn move1 [heaps {:keys [from to]}]
-  ;(println "heaps:" heaps)
-  ;(println "move from: " from " to: " to)
-  (let
-    [from (- from 1)
-     to (- to 1)
-     cont (first (nth heaps from))]
-    (-> heaps
-      (update-in [from] #(drop 1 %))
-      (update-in [to] #(cons cont %)))))
+(print-it small)
+
+(print-it input)
 
 
-(defn move [heaps m]
-  (reduce move1 heaps (take (:move m) (repeat m))))
+(defn empty-line? [line]
+  (every? #(= \. %) line))
 
-(defn process-all-moves [{:keys [heaps moves]}]
-  (reduce move heaps moves))
+(defn expand-lines [input]
+  (remove nil? (mapcat
+                 (fn [line]
+                   [line
+                    (when (empty-line? line)
+                      line)])
+                 input)))
 
-;; first half
-(->> (parse input)
-  (process-all-moves)
-  (map first))
+(print-it (expand-lines small))
 
-(defn rovnak-na-vohejbak [world]
-  "Just for fun use CrateMover9000 to simulate CrateMover9001; do not try at home or in real world with real Elves"
-  (let
-    [tmp (+ 1 (count (:heaps world)))]
-    (-> world
-        (update-in [:heaps] conj '()) 
-        (update-in [:moves] (fn [moves]
-                              (apply concat
-                                (map
-                                  (fn [{:keys [move from to]}]
-                                     [{:move move
-                                       :from from
-                                       :to tmp}
-                                      {:move move
-                                       :from tmp
-                                       :to to}])
-                                  moves)))))))
 
-;; second half
-(->> (parse input)
-  rovnak-na-vohejbak
-  (process-all-moves)
-  (map first)
-  (drop-last))
+(defn transpose [universe]
+  (apply map str universe))
+
+
+(print-it (transpose small))
+
+(defn expand-universe [universe]
+  (->> universe
+    expand-lines
+    transpose
+    expand-lines
+    transpose))
+
+
+(print-it (expand-universe small))
+
+
+(defn get-galaxies [universe]
+  (->> (map-indexed
+        (fn [i row]
+          (map-indexed
+            (fn [j ch]
+              (when (= ch \#)
+                [i j]))
+            row))
+        universe)
+     (apply concat)
+     (remove nil?)))
+
+(defn pairs [galaxies]
+  (for [a galaxies
+        b galaxies
+        :while (not= a b)]
+       [a b]))
+
+
+(pairs [:a :b :c :d :e])
+
+(pairs (get-galaxies small))
+
+(defn distance [[[x1 y1] [x2 y2]]]
+  (+
+    (abs (- x1 x2))
+    (abs (- y1 y2))))
+
+(distance [[0 0] [1 1]])
+
+
+(->> small
+  expand-universe
+  get-galaxies
+  pairs
+  (map distance)
+  (reduce +))
+
+(->> input
+  expand-universe
+  get-galaxies
+  pairs
+  (map distance)
+  (reduce +))
+
+
+;; -------------------------------------------------
+
+
+(get-galaxies small)
+
+(print-it small)
+
+(defn empty-lines [lines]
+  (->> (map-indexed
+        (fn [i line]
+          (when (empty-line? line)
+            i))
+        lines)
+     (remove nil?)))
+
+(defn between? [a b c]
+  (or
+    (< a b c)
+    (> a b c)))
+
+(let
+  [
+   ;input small
+   input input
+   ;expand-by 1
+   expand-by 999999 
+   rows (empty-lines input)
+   cols (->> input
+          transpose
+          empty-lines)
+   galaxies (get-galaxies input)
+   extended-distance
+    (fn [[[x1 y1] [x2 y2] :as all]]
+      (+
+        (distance all)
+        (->> rows
+          (filter #(between? x1 % x2))
+          count
+          (* expand-by))
+        (->> cols
+          (filter #(between? y1 % y2))
+          count
+          (* expand-by))))]
+  (->> galaxies
+    pairs
+    (map extended-distance)
+    (reduce +)))
+    
+
