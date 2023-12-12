@@ -54,19 +54,80 @@
      (checksums text)))
 
 (defn get-num-of-possibilities [{:keys [recs checks]}]
-  (->> recs
-    generate
-    (filter #(valid? % checks))
-    count))
+  (let
+    [result (->> recs
+              generate
+              (filter #(valid? % checks))
+              count)]
+    (println "GENERATED one RESULT")
+    result))
 
 
-(->> small
-  (map get-num-of-possibilities)
-  (reduce +))
+(time (->> small
+       (map get-num-of-possibilities)
+       (reduce +)))
 
-(->> input
-  (pmap get-num-of-possibilities)
-  (reduce +))
+(time (->> input
+       (pmap get-num-of-possibilities)
+       (reduce +)))
+
+;; ------------------------------------
 
 
+(defn unfold-one [{:keys [recs checks]}]
+  {:recs (str recs "?" recs "?" recs "?" recs "?" recs)
+   :checks (concat checks checks checks checks checks)})
+
+(comment "probably would produces result, but not on today hw :)"
+  (->> small
+    (map unfold-one)
+    (pmap get-num-of-possibilities)
+    (reduce +)))
+
+(comment "5 times faster, but still does not finish with input data"
+  (defn start-valid? [text checks]
+    (let
+      [start-checks (butlast (checksums text))
+       trim-checks (take (count start-checks) checks)
+       result (or (nil? start-checks)
+                (= start-checks trim-checks))]
+      result))
+
+  (defn generate-valid [[base checks]]
+    (loop
+      [base base
+       results [""]]
+      (if (seq base)
+        (let
+          [the-one (first base)]
+          (if ((set options) the-one)
+            (recur
+              (rest base)
+              (->> (map #(str % the-one) results)
+                (filter #(start-valid? % checks))))
+            (recur
+              (rest base)
+              (->> (append-options results)
+                (filter #(start-valid? % checks))))))
+        (do
+          (let
+            [final
+              (->> results
+               (filter #(valid? % checks))
+               count)]
+            (println "one done with result: " final)
+            final)))))
+
+
+  (time (->> small
+         (map unfold-one)
+         (map (fn [m] [(:recs m) (:checks m)]))
+         (pmap generate-valid)
+         (reduce +)))
+
+  (time (->> input
+         (map unfold-one)
+         (map (fn [m] [(:recs m) (:checks m)]))
+         (pmap generate-valid)
+         (reduce +))))
 
